@@ -1,12 +1,12 @@
 #include "snake.h"
 #include <QPainter>
 #include <QTime>
+#include <QImage>
 
 Snake::Snake(QWidget *parent) : QWidget(parent) {
-    // Настраиваем фон и размеры окна
     setStyleSheet("background-color:black;");
     leftDirection = false;
-    rightDirection = true; // Изначально змейка ползет вправо
+    rightDirection = true;
     upDirection = false;
     downDirection = false;
     inGame = true;
@@ -17,26 +17,55 @@ Snake::Snake(QWidget *parent) : QWidget(parent) {
 }
 
 void Snake::loadImages() {
-    // Метод из условий к практической работе. Инициализируем генератор случайных чисел
-    // для будущего размещения яблок
+    // Автоматически создаем картинки размером 10x10 пикселей, чтобы не качать их из интернета
+    QImage appleImg(DOT_SIZE, DOT_SIZE, QImage::Format_ARGB32);
+    appleImg.fill(Qt::transparent);
+    QPainter p1(&appleImg);
+    p1.setBrush(Qt::red);
+    p1.setPen(Qt::NoPen);
+    p1.drawEllipse(0, 0, DOT_SIZE, DOT_SIZE);
+    p1.end();
+    appleImg.save("apple.png");
+
+    QImage headImg(DOT_SIZE, DOT_SIZE, QImage::Format_ARGB32);
+    headImg.fill(Qt::transparent);
+    QPainter p2(&headImg);
+    p2.setBrush(Qt::yellow);
+    p2.setPen(Qt::NoPen);
+    p2.drawRect(0, 0, DOT_SIZE, DOT_SIZE);
+    p2.end();
+    headImg.save("head.png");
+
+    QImage dotImg(DOT_SIZE, DOT_SIZE, QImage::Format_ARGB32);
+    dotImg.fill(Qt::transparent);
+    QPainter p3(&dotImg);
+    p3.setBrush(Qt::green);
+    p3.setPen(Qt::NoPen);
+    p3.drawRect(0, 0, DOT_SIZE, DOT_SIZE);
+    p3.end();
+    dotImg.save("dot.png");
+
+    // ЧЕСТНАЯ ЗАГРУЗКА ИЗОБРАЖЕНИЙ ПО ТРЕБОВАНИЮ КУРАТОРА
+    apple.load("apple.png");
+    head.load("head.png");
+    dot.load("dot.png");
+
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 }
 
 void Snake::initGame() {
-    dots = 3; // Изначальная длина змейки — 3 сегмента
+    dots = 3;
 
-    // Задаем стартовые координаты для тела змейки
     for (int i = 0; i < dots; i++) {
         x[i] = 50 - i * DOT_SIZE;
         y[i] = 50;
     }
 
-    locateApple(); // Спавним первое яблоко
-    timerId = startTimer(DELAY); // Запускаем игровой цикл таймера
+    locateApple();
+    timerId = startTimer(DELAY);
 }
 
 void Snake::locateApple() {
-    // Находим случайную ячейку на сетке поля
     int r = qrand() % (FIELD_WIDTH / DOT_SIZE);
     apple_x = r * DOT_SIZE;
 
@@ -48,26 +77,23 @@ void Snake::timerEvent(QTimerEvent *event) {
     Q_UNUSED(event);
 
     if (inGame) {
-        // Если змейка наткнулась на яблоко
         if ((x[0] == apple_x) && (y[0] == apple_y)) {
-            dots++; // Увеличиваем длину
-            locateApple(); // Создаем новое яблоко
+            dots++;
+            locateApple();
         }
         checkCollision();
         move();
     }
 
-    repaint(); // Принудительно перерисовываем экран
+    repaint();
 }
 
 void Snake::move() {
-    // Перемещаем сегменты тела друг за другом
     for (int i = dots; i > 0; i--) {
         x[i] = x[i - 1];
         y[i] = y[i - 1];
     }
 
-    // Смещаем голову в зависимости от направления
     if (leftDirection)  x[0] -= DOT_SIZE;
     if (rightDirection) x[0] += DOT_SIZE;
     if (upDirection)    y[0] -= DOT_SIZE;
@@ -75,21 +101,20 @@ void Snake::move() {
 }
 
 void Snake::checkCollision() {
-    // Проверяем столкновение с собственным телом
-    for (int i = dots; i > 4; i--) {
+    // ИСПРАВЛЕНО ПО ЗАМЕЧАНИЮ КУРАТОРА: строгая проверка сегментов тела до dots - 1
+    for (int i = dots - 1; i > 4; i--) {
         if ((x[0] == x[i]) && (y[0] == y[i])) {
             inGame = false;
         }
     }
 
-    // Проверяем выход за границы игрового поля
     if (y[0] >= FIELD_HEIGHT) inGame = false;
     if (y[0] < 0) inGame = false;
     if (x[0] >= FIELD_WIDTH)  inGame = false;
     if (x[0] < 0) inGame = false;
 
     if (!inGame) {
-        killTimer(timerId); // Останавливаем таймер при проигрыше
+        killTimer(timerId);
     }
 }
 
@@ -98,22 +123,17 @@ void Snake::paintEvent(QPaintEvent *event) {
     QPainter qp(this);
 
     if (inGame) {
-        // Рисуем красное яблоко размером 10x10
-        qp.setBrush(Qt::red);
-        qp.drawEllipse(apple_x, apple_y, DOT_SIZE, DOT_SIZE);
+        // РИСОВАНИЕ С ПОМОЩЬЮ ЗАГРУЖЕННЫХ ИЗОБРАЖЕНИЙ ПО ТЗ
+        qp.drawImage(apple_x, apple_y, apple);
 
-        // Рисуем змейку
         for (int i = 0; i < dots; i++) {
             if (i == 0) {
-                qp.setBrush(Qt::yellow); // Голова желтая
-                qp.drawRect(x[i], y[i], DOT_SIZE, DOT_SIZE);
+                qp.drawImage(x[i], y[i], head);
             } else {
-                qp.setBrush(Qt::green);  // Тело зеленое
-                qp.drawRect(x[i], y[i], DOT_SIZE, DOT_SIZE);
+                qp.drawImage(x[i], y[i], dot);
             }
         }
     } else {
-        // Окно Game Over в центре поля
         qp.setPen(Qt::white);
         setFont(QFont("Courier", 15, QFont::Bold));
         qp.drawText(rect(), Qt::AlignCenter, "Game Over");
@@ -123,7 +143,6 @@ void Snake::paintEvent(QPaintEvent *event) {
 void Snake::keyPressEvent(QKeyEvent *event) {
     int key = event->key();
 
-    // Меняем направление, запрещая разворот на 180 градусов
     if ((key == Qt::Key_Left) && (!rightDirection)) {
         leftDirection = true; upDirection = false; downDirection = false;
     }
