@@ -35,7 +35,7 @@ private:
     int x[ALL_DOTS];
     int y[ALL_DOTS];
 
-    // Объекты для хранения честно загруженных картинок по ТЗ
+    // Объекты для хранения загруженных картинок по ТЗ
     QImage apple;
     QImage head;
     QImage dot;

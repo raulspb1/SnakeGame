@@ -17,7 +17,7 @@ Snake::Snake(QWidget *parent) : QWidget(parent) {
 }
 
 void Snake::loadImages() {
-    // Автоматически создаем картинки размером 10x10 пикселей, чтобы не качать их из интернета
+    // Динамическое создание текстур для независимости проекта от внешних файлов.
     QImage appleImg(DOT_SIZE, DOT_SIZE, QImage::Format_ARGB32);
     appleImg.fill(Qt::transparent);
     QPainter p1(&appleImg);
@@ -45,7 +45,7 @@ void Snake::loadImages() {
     p3.end();
     dotImg.save("dot.png");
 
-    // ЧЕСТНАЯ ЗАГРУЗКА ИЗОБРАЖЕНИЙ ПО ТРЕБОВАНИЮ КУРАТОРА
+    // ЗАГРУЗКА ИЗОБРАЖЕНИЙ
     apple.load("apple.png");
     head.load("head.png");
     dot.load("dot.png");
@@ -101,7 +101,7 @@ void Snake::move() {
 }
 
 void Snake::checkCollision() {
-    // ИСПРАВЛЕНО ПО ЗАМЕЧАНИЮ КУРАТОРА: строгая проверка сегментов тела до dots - 1
+    // ИСПРАВЛЕНО: проверка сегментов тела до dots - 1
     for (int i = dots - 1; i > 4; i--) {
         if ((x[0] == x[i]) && (y[0] == y[i])) {
             inGame = false;
